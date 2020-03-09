@@ -67,11 +67,34 @@ class ExpressApiServer extends Clonable {
     this.app.use(cors());
     this.app.use(express.urlencoded({ extended: false }));
     this.app.use(express.json());
+
+    this.appUseConfMiddleware();
+
     if (port && port > 0) {
       this.app.listen(port, () => {
         const logger = this.container.get('logger');
         logger.info(`${this.settings.tag} listening on port ${port}!`);
       });
+    }
+  }
+
+  appUseConfMiddleware() {
+    const middlewareArray = this.settings.middleware;
+
+    if (middlewareArray && middlewareArray.length) {
+      middlewareArray.forEach(name => {
+        try {
+          const middlewareObj = this.container.get(name);
+          const logger = this.container.get('logger');
+
+          logger.debug(`Add '${name}' middleware to 'express-api-server'.`);
+
+          // Add to the Express App.
+          this.app.use(middlewareObj[ name ]());
+        } catch (ex) {
+          logger.error(`Error adding '${name}' middleware to 'express-api-server'.`, ex);
+        }
+      })
     }
   }
 }
